@@ -52,7 +52,7 @@ jobs:
             context: .  # Specifies the build context (current directory)
             push: true  # Pushes the built image to Docker Hub
             file: Dockerfile  # Uses the Dockerfile in the repo for building the image
-            tags: ${{ secrets.DOCKER_USERNAME }}/Flasktest-app:latest  # Names the Docker image
+            tags: ${{ secrets.DOCKER_USERNAME }}/flasktest-app:latest  # Names the Docker image
 
         - name: Image digest
           run: echo ${{ steps.build-and-publish.outputs.digest }}  # Prints the image digest (a unique identifier)
