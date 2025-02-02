@@ -1,3 +1,11 @@
-# use offical python image
+# use a official python image from docker hub
+FROM python:3.9-slim
 
-FROM python : 3.
+#set working directory
+WORKDIR /app
+
+#copy the contents into container
+COPY  . /app  
+RUN pip intall flask
+EXPOSE 5000
+CMD ["python","app.py"]

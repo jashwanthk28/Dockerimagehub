@@ -1,0 +1,58 @@
+name: CI/CD for dockerised Flask app  # Name of the workflow
+
+on:
+  push:
+    branches: [main]  # Trigger the workflow when changes are pushed to 'main'
+  pull_request:
+    branches: [main]  # Also trigger the workflow on pull requests to 'main'
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest  # Specifies the OS for running the job (Ubuntu latest version)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3  # Checks out the repository code into the workflow runner
+
+      - name: Setup Python
+        uses: actions/setup-python@v4  # Installs Python on the runner
+        with:
+          python-version: '3.9'  # Specifies Python version to use (3.9)
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip  # Updates pip
+          pip install -r requirements.txt  # Installs dependencies from requirements.txt
+          pip install pytest  # Installs pytest for running tests
+
+      - name: Run tests
+        run: |
+            pytest  # Runs the tests to ensure the code is working correctly
+
+  build-and-publish:
+    runs-on: ubuntu-latest  # Runs this job on an Ubuntu runner
+    needs: build_and_test  # This job will only run if 'build_and_test' passes successfully
+
+    steps:
+        - name: Checkout code
+          uses: actions/checkout@v3  # Checks out the repository code again
+
+        - name: Set up Docker Buildx
+          uses: docker/setup-buildx-action@v2  # Enables Docker Buildx for better build capabilities
+
+        - name: Login to Docker Hub
+          uses: docker/login-action@v2  # Logs in to Docker Hub using stored credentials
+          with:
+            username: ${{ secrets.DOCKER_USERNAME }}  # Fetches Docker Hub username from GitHub Secrets
+            password: ${{ secrets.DOCKER_PASSWORD }}  # Fetches Docker Hub password from GitHub Secrets
+
+        - name: Build and publish Docker image
+          uses: docker/build-push-action@v4  # Builds and pushes the Docker image
+          with:
+            context: .  # Specifies the build context (current directory)
+            push: true  # Pushes the built image to Docker Hub
+            file: Dockerfile  # Uses the Dockerfile in the repo for building the image
+            tags: ${{ secrets.DOCKER_USERNAME }}/Flasktest-app:latest  # Names the Docker image
+
+        - name: Image digest
+          run: echo ${{ steps.build-and-publish.outputs.digest }}  # Prints the image digest (a unique identifier)
