@@ -6,6 +6,6 @@ WORKDIR /app
 
 #copy the contents into container
 COPY  . /app  
-RUN pip intall flask
+RUN pip install flask
 EXPOSE 5000
 CMD ["python","app.py"]
