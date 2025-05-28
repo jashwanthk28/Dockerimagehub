@@ -1,58 +1,63 @@
-name: CI/CD for dockerised Flask app  # Name of the workflow
+name: CI/CD for dockerised Flask app
 
 on:
   push:
-    branches: [main]  # Trigger the workflow when changes are pushed to 'main'
+    branches: [main]
   pull_request:
-    branches: [main]  # Also trigger the workflow on pull requests to 'main'
+    branches: [main]
 
 jobs:
   build_and_test:
-    runs-on: ubuntu-latest  # Specifies the OS for running the job (Ubuntu latest version)
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3  # Checks out the repository code into the workflow runner
+        uses: actions/checkout@v3
 
       - name: Setup Python
-        uses: actions/setup-python@v4  # Installs Python on the runner
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.9'  # Specifies Python version to use (3.9)
+          python-version: '3.9'
+
+      - name: Clean up conflicting files and cache
+        run: |
+          echo "Cleaning __pycache__ and any extra folders"
+          find . -type d -name "__pycache__" -exec rm -r {} +
+          find . -type f -name "*.pyc" -delete
+          rm -rf Dockerimagehub-main  # Prevent duplicate folders from ZIPs
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip  # Updates pip
-          pip install flask
-          pip install pytest  # Installs pytest for running tests
+          python -m pip install --upgrade pip
+          pip install flask pytest
 
       - name: Run tests
-        run: |
-            pytest  # Runs the tests to ensure the code is working correctly
+        run: pytest
 
   build-and-publish:
-    runs-on: ubuntu-latest  # Runs this job on an Ubuntu runner
-    needs: build_and_test  # This job will only run if 'build_and_test' passes successfully
+    runs-on: ubuntu-latest
+    needs: build_and_test
 
     steps:
-        - name: Checkout code
-          uses: actions/checkout@v3  # Checks out the repository code again
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-        - name: Set up Docker Buildx
-          uses: docker/setup-buildx-action@v2  # Enables Docker Buildx for better build capabilities
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-        - name: Login to Docker Hub
-          uses: docker/login-action@v2  # Logs in to Docker Hub using stored credentials
-          with:
-            username: ${{ secrets.DOCKER_USERNAME }}  # Fetches Docker Hub username from GitHub Secrets
-            password: ${{ secrets.DOCKER_PASSWORD }}  # Fetches Docker Hub password from GitHub Secrets
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-        - name: Build and publish Docker image
-          uses: docker/build-push-action@v4  # Builds and pushes the Docker image
-          with:
-            context: .  # Specifies the build context (current directory)
-            push: true  # Pushes the built image to Docker Hub
-            file: Dockerfile  # Uses the Dockerfile in the repo for building the image
-            tags: ${{ secrets.DOCKER_USERNAME }}/flasktest-app:latest  # Names the Docker image
+      - name: Build and publish Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          file: Dockerfile
+          tags: ${{ secrets.DOCKER_USERNAME }}/flasktest-app:latest
 
-        - name: Image digest
-          run: echo ${{ steps.build-and-publish.outputs.digest }}  # Prints the image digest (a unique identifier)
+      - name: Image digest
+        run: echo ${{ steps.build-and-publish.outputs.digest }}
