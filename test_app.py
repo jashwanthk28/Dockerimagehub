@@ -7,4 +7,4 @@ def test_come():
     
 
     assert response.status_code == 200
-    assert response.data == b"Hello, Guyss!"
+    assert response.data == b"Hello, Guys!"
